@@ -1,3 +1,5 @@
+{ package main; use Data::Dumper; }
+
 package MooseX::RoleQR;
 
 use 5.010;
@@ -24,6 +26,7 @@ my %ROLE_METAROLES = (
 	application_to_class       => ['MooseX::RoleQR::Trait::Application::ToClass'],
 	application_to_role        => ['MooseX::RoleQR::Trait::Application::ToRole'],
 );
+my %ARGH;
 
 sub _add_method_modifier
 {
@@ -85,6 +88,7 @@ BEGIN {
 	has deferred_modifier_class => (
 		is      => 'ro',
 		isa     => 'ClassName',
+		lazy    => 1,
 		default => sub { 'MooseX::RoleQR::Meta::DeferredModifier' },
 	);
 	
@@ -96,6 +100,7 @@ BEGIN {
 			traits  => ['Array'],
 			is      => 'ro',
 			isa     => 'ArrayRef[MooseX::RoleQR::Meta::DeferredModifier]',
+			lazy    => 1,
 			default => sub { +[] },
 			handles => {
 				"has_deferred_${type}_method_modifiers" => "count",
@@ -145,16 +150,30 @@ BEGIN {
 	no thanks;
 	use Moose::Role;
 	use namespace::sweep;
-	
+
+	before apply => sub {
+		my ($self, $role, $class) = @_;
+	};
+
 	after apply_override_method_modifiers => sub {
 		my ($self, $role, $class) = @_;
-		return unless $role->can('get_deferred_override_method_modifier');
-		for my $method ( $class->get_all_method_names )
+		my $modifier_type = 'override';
+		
+		my $add = "add_${modifier_type}_method_modifier";
+		my $get = "get_deferred_${modifier_type}_method_modifiers";
+		
+		my @roles = ($role, map { $_->meta } @{$ARGH{$role->name} || []});
+		
+		METHOD: for my $method ( $class->get_all_method_names )
 		{
-			next if $role->get_override_method_modifier($method);
-			my $modifier = $role->get_deferred_override_method_modifier($method)
-				or next;
-			$class->add_override_method_modifier($method, $modifier->body);
+			ROLE: for my $r (@roles)
+			{
+				next ROLE unless $r->can($get);
+				MODIFIER: for ($r->$get($method))
+				{
+					$class->$add($method, $_->body);
+				}
+			}
 		}
 	};
 	
@@ -162,10 +181,19 @@ BEGIN {
 		my ($self, $modifier_type, $role, $class) = @_;
 		my $add = "add_${modifier_type}_method_modifier";
 		my $get = "get_deferred_${modifier_type}_method_modifiers";
-		return unless $role->can($get);
-		for my $method ( $class->get_all_method_names )
+		
+		my @roles = ($role, map { $_->meta } @{$ARGH{$role->name} || []});
+		
+		METHOD: for my $method ( $class->get_all_method_names )
 		{
-			$class->$add($method, $_->body) for $role->$get($method);
+			ROLE: for my $r (@roles)
+			{
+				next ROLE unless $r->can($get);
+				MODIFIER: for ($r->$get($method))
+				{
+					$class->$add($method, $_->body);
+				}
+			}
 		}
 	};
 };
@@ -178,24 +206,16 @@ BEGIN {
 
 	before apply => sub {
 		my ($self, $role1, $role2) = @_;
+		push @{$ARGH{$role2->name}}, $role1->name;
 		Moose::Util::MetaRole::apply_metaroles(
-			for            => $role2,
+			for            => $role2->name,
 			role_metaroles => \%ROLE_METAROLES,
 		);
-	};
-
-	after apply_override_method_modifiers => sub {
-		my ($self, $role1, $role2) = @_;
-		my $add = "add_overide_method_modifier";
-		my $get = "deferred_override_method_modifiers";
-		$role2->$add($_) for @{ $role1->$get };
-	};
-	
-	after apply_method_modifiers => sub {
-		my ($self, $modifier_type, $role1, $role2) = @_;
-		my $add = "add_${modifier_type}_method_modifier";
-		my $get = "deferred_${modifier_type}_method_modifiers";
-		$role2->$add($_) for @{ $role1->$get };
+		bless $role2,
+			Moose::Util::with_traits(
+				ref($role2),
+				'MooseX::RoleQR::Trait::Role',
+			);
 	};
 };
 
