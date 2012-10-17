@@ -1,5 +1,3 @@
-{ package main; use Data::Dumper; }
-
 package MooseX::RoleQR;
 
 use 5.010;
@@ -72,7 +70,7 @@ BEGIN {
 		my ($meta, $name) = @_;
 		my $expr = $meta->expression;
 		return $name =~ $expr if does($expr, REGEXP);
-		return $expr->($name) if does($expr, CODE);
+		return $expr->($name) if does($expr, CODE);  # ssh... secret!
 		return;
 	}
 };
@@ -92,7 +90,7 @@ BEGIN {
 		default => sub { 'MooseX::RoleQR::Meta::DeferredModifier' },
 	);
 	
-	for my $type (qw( after around before override ))
+	for my $type (qw( after around before )) #override
 	{
 		no strict 'refs';
 		my $attr = "deferred_${type}_method_modifiers";
@@ -132,17 +130,17 @@ BEGIN {
 		};
 	}
 	
-	sub get_deferred_override_method_modifier
-	{
-		my ($meta, $name) = @_;
-		my @r = grep { $_->matches_name($name) } @{ $meta->deferred_override_method_modifiers };
-		carp sprintf(
-			"%s has multiple override modifiers for method %s",
-			$meta->name,
-			$name,
-		) if @r > 1;
-		return $r[0];
-	}
+#	sub get_deferred_override_method_modifier
+#	{
+#		my ($meta, $name) = @_;
+#		my @r = grep { $_->matches_name($name) } @{ $meta->deferred_override_method_modifiers };
+#		carp sprintf(
+#			"%s has multiple override modifiers for method %s",
+#			$meta->name,
+#			$name,
+#		) if @r > 1;
+#		return $r[0];
+#	}
 };
 
 BEGIN {
@@ -155,27 +153,27 @@ BEGIN {
 		my ($self, $role, $class) = @_;
 	};
 
-	after apply_override_method_modifiers => sub {
-		my ($self, $role, $class) = @_;
-		my $modifier_type = 'override';
-		
-		my $add = "add_${modifier_type}_method_modifier";
-		my $get = "get_deferred_${modifier_type}_method_modifiers";
-		
-		my @roles = ($role, map { $_->meta } @{$ARGH{$role->name} || []});
-		
-		METHOD: for my $method ( $class->get_all_method_names )
-		{
-			ROLE: for my $r (@roles)
-			{
-				next ROLE unless $r->can($get);
-				MODIFIER: for ($r->$get($method))
-				{
-					$class->$add($method, $_->body);
-				}
-			}
-		}
-	};
+#	after apply_override_method_modifiers => sub {
+#		my ($self, $role, $class) = @_;
+#		my $modifier_type = 'override';
+#		
+#		my $add = "add_${modifier_type}_method_modifier";
+#		my $get = "get_deferred_${modifier_type}_method_modifiers";
+#		
+#		my @roles = ($role, map { $_->meta } @{$ARGH{$role->name} || []});
+#		
+#		METHOD: for my $method ( $class->get_all_method_names )
+#		{
+#			ROLE: for my $r (@roles)
+#			{
+#				next ROLE unless $r->can($get);
+#				MODIFIER: for ($r->$get($method))
+#				{
+#					$class->$add($method, $_->body);
+#				}
+#			}
+#		}
+#	};
 	
 	after apply_method_modifiers => sub {
 		my ($self, $modifier_type, $role, $class) = @_;
@@ -211,11 +209,13 @@ BEGIN {
 			for            => $role2->name,
 			role_metaroles => \%ROLE_METAROLES,
 		);
-		bless $role2,
+		bless(
+			$role2,
 			Moose::Util::with_traits(
 				ref($role2),
 				'MooseX::RoleQR::Trait::Role',
-			);
+			),
+		);
 	};
 };
 
@@ -229,7 +229,65 @@ MooseX::RoleQR - allow "before qr{...} => sub {...};" in roles
 
 =head1 SYNOPSIS
 
+   {
+      package Local::Role;
+      use MooseX::RoleQR;
+      after qr{^gr} => sub {
+         print "World\n";
+      };
+   }
+   
+   {
+      package Local::Class;
+      use Moose;
+      with qw( Local::Role );
+      sub greet {
+         print "Hello";
+      }
+   }
+   
+   Local::Class->new->greet; # prints "Hello World\n"
+
 =head1 DESCRIPTION
+
+Method modifiers in Moose classes can be specified using regular expressions
+a la:
+
+   before qr{...} => sub {...};
+
+However, this is not allowed in Moose roles because Moose doesn't know which
+class the role will be composed with, and thus doesn't know which method
+names match the regular expression. Let's change that.
+
+This module implements regular expression matched method modifiers for Moose
+roles. It does so by deferring the calculation of which methods to modify
+until role application time.
+
+The current implementation handles only C<before>, C<after> and C<around>
+modifiers (not C<override>), and thus it overrides the following standard
+Moose::Role keywords:
+
+=over
+
+=item C<< before Str|ArrayRef|RegexpRef => CodeRef >>
+
+=item C<< after Str|ArrayRef|RegexpRef => CodeRef >>
+
+=item C<< around Str|ArrayRef|RegexpRef => CodeRef >>
+
+=back
+
+=head2 Caveat Regarding the Order of Method Modifiers
+
+Moose executes method modifiers in a well-defined order (see
+L<Moose::Manual::MethodModifiers> for details). This module has the potential
+to disrupt that order, as regular expression matched modifiers are always
+applied after the role's other modifiers have been applied.
+
+=head2 Caveat: no C<< use Moose::Role >>
+
+You should C<< use MooseX::RoleQR >> I<instead of> Moose::Role; not
+I<as well as>.
 
 =head1 BUGS
 
@@ -237,6 +295,8 @@ Please report any bugs to
 L<http://rt.cpan.org/Dist/Display.html?Queue=MooseX-RoleQR>.
 
 =head1 SEE ALSO
+
+L<Moose::Role>.
 
 =head1 AUTHOR
 
@@ -248,7 +308,6 @@ This software is copyright (c) 2012 by Toby Inkster.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
-
 
 =head1 DISCLAIMER OF WARRANTIES
 
