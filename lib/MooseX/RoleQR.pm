@@ -12,7 +12,7 @@ BEGIN {
 
 use Moose ();
 use Moose::Exporter;
-use Scalar::Does -constants;
+use Scalar::Does qw( does blessed -constants );
 
 Moose::Exporter->setup_import_methods(
 	with_meta => [qw/ before after around /],
@@ -49,12 +49,28 @@ sub init_meta
 	my $class   = shift;
 	my %options = @_;
 	Moose::Role->init_meta(%options);
-
+	
 	Moose::Util::MetaRole::apply_metaroles(
 		for            => $options{for_class},
 		role_metaroles => \%ROLE_METAROLES,
 	);
 }
+
+{
+	no warnings;
+	my $orig = Moose::Meta::Role->can('combine');
+	*Moose::Meta::Role::combine = sub {
+		my ($meta, @role_specs) = @_;
+		my $combo = $meta->$orig(@role_specs);
+		return bless(
+			$combo,
+			Moose::Util::with_traits(
+				ref($combo),
+				'MooseX::RoleQR::Trait::Role::Composite',
+			),
+		);
+	}
+};
 
 BEGIN {
 	package MooseX::RoleQR::Meta::DeferredModifier;
@@ -65,6 +81,15 @@ BEGIN {
 	
 	has [qw/ expression body /] => (is => 'ro', required => 1);
 	
+#	sub matches_name
+#	{
+#		my ($meta, $name) = @_;
+#		my $return = $meta->_matches_name($name);
+#		print ($return ? "@{[$meta->expression]} matches $name\n" : "@{[$meta->expression]} does not match $name\n");
+#		return $return;
+#	}
+#	
+#	sub _matches_name
 	sub matches_name
 	{
 		my ($meta, $name) = @_;
@@ -144,6 +169,46 @@ BEGIN {
 };
 
 BEGIN {
+	package MooseX::RoleQR::Trait::Role::Composite;
+	no thanks;
+	use Moose::Role;
+	use namespace::sweep;
+	
+	after apply => sub {
+		my ($meta, $class) = @_;
+		if ($class->isa('Moose::Meta::Class'))
+		{
+			foreach my $role (@{ $meta->get_roles })
+			{
+				foreach my $modifier_type (qw( before after around ))
+				{
+					MooseX::RoleQR::Trait::Application::ToClass->apply_deferred_method_modifiers(
+						$modifier_type,
+						$role,
+						$class,
+					);
+				}
+			}
+		}
+		else
+		{
+			push @{$ARGH{$class->name}}, map { $_->name } @{ $meta->get_roles };
+			Moose::Util::MetaRole::apply_metaroles(
+				for            => $class->name,
+				role_metaroles => \%ROLE_METAROLES,
+			);
+			bless(
+				$class,
+				Moose::Util::with_traits(
+					ref($class),
+					'MooseX::RoleQR::Trait::Role',
+				),
+			);
+		}
+	};
+};
+
+BEGIN {
 	package MooseX::RoleQR::Trait::Application::ToClass;
 	no thanks;
 	use Moose::Role;
@@ -177,6 +242,16 @@ BEGIN {
 	
 	after apply_method_modifiers => sub {
 		my ($self, $modifier_type, $role, $class) = @_;
+		$self->apply_deferred_method_modifiers(
+			$modifier_type,
+			$role,
+			$class,
+		);
+	};
+	
+	sub apply_deferred_method_modifiers
+	{
+		my ($self, $modifier_type, $role, $class) = @_;
 		my $add = "add_${modifier_type}_method_modifier";
 		my $get = "get_deferred_${modifier_type}_method_modifiers";
 		
@@ -189,11 +264,12 @@ BEGIN {
 				next ROLE unless $r->can($get);
 				MODIFIER: for ($r->$get($method))
 				{
+#					warn "@{[$role->name]} modifying @{[$class->name]} method $method";
 					$class->$add($method, $_->body);
 				}
 			}
 		}
-	};
+	}
 };
 
 BEGIN {
@@ -288,6 +364,11 @@ applied after the role's other modifiers have been applied.
 
 You should C<< use MooseX::RoleQR >> I<instead of> Moose::Role; not
 I<as well as>.
+
+=head2 General Caveat
+
+There's some pretty nasty stuff under the hood. Let's pretend it's
+not there.
 
 =head1 BUGS
 
