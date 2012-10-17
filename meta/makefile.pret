@@ -1,0 +1,9 @@
+# This file provides instructions for packaging.
+
+`MooseX-RoleQR`
+	perl_version_from m`MooseX::RoleQR`;
+	version_from      m`MooseX::RoleQR`;
+	readme_from       m`MooseX::RoleQR`;
+	test_requires     p`Test::More 0.61` ;
+	.
+
