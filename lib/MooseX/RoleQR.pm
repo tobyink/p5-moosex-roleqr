@@ -1,13 +1,13 @@
 package MooseX::RoleQR;
 
-use 5.010;
+use 5.008;
 use strict;
 use warnings;
 use utf8;
 
 BEGIN {
 	$MooseX::RoleQR::AUTHORITY = 'cpan:TOBYINK';
-	$MooseX::RoleQR::VERSION   = '0.001';
+	$MooseX::RoleQR::VERSION   = '0.002';
 }
 
 use Moose ();
@@ -31,7 +31,7 @@ sub _add_method_modifier
 	my $type = shift;
 	my $meta = shift;
 
-	if (does($_[0], REGEXP))
+	if (does($_[0], REGEXP) or does($_[0], CODE))
 	{
 		my $pusher = "add_deferred_${type}_method_modifier";
 		return $meta->$pusher(@_);
@@ -78,7 +78,13 @@ BEGIN {
 	use Moose;
 	use Scalar::Does -constants;
 	use namespace::sweep;
-	
+
+	BEGIN {
+		no warnings;
+		our $AUTHORITY = 'cpan:TOBYINK';
+		our $VERSION   = '0.002';
+	};
+
 	has [qw/ expression body /] => (is => 'ro', required => 1);
 	
 #	sub matches_name
@@ -108,6 +114,12 @@ BEGIN {
 	use Carp;
 	use namespace::sweep;
 	
+	BEGIN {
+		no warnings;
+		our $AUTHORITY = 'cpan:TOBYINK';
+		our $VERSION   = '0.002';
+	};
+
 	has deferred_modifier_class => (
 		is      => 'ro',
 		isa     => 'ClassName',
@@ -174,6 +186,12 @@ BEGIN {
 	use Moose::Role;
 	use namespace::sweep;
 	
+	BEGIN {
+		no warnings;
+		our $AUTHORITY = 'cpan:TOBYINK';
+		our $VERSION   = '0.002';
+	};
+
 	after apply => sub {
 		my ($meta, $class) = @_;
 		if ($class->isa('Moose::Meta::Class'))
@@ -193,17 +211,20 @@ BEGIN {
 		else
 		{
 			push @{$ARGH{$class->name}}, map { $_->name } @{ $meta->get_roles };
-			Moose::Util::MetaRole::apply_metaroles(
-				for            => $class->name,
-				role_metaroles => \%ROLE_METAROLES,
-			);
-			bless(
-				$class,
-				Moose::Util::with_traits(
-					ref($class),
-					'MooseX::RoleQR::Trait::Role',
-				),
-			);
+### Commenting the stuff below out helped pass t/03classattribute.t.
+### Not completely sure why. :-(
+###
+#			Moose::Util::MetaRole::apply_metaroles(
+#				for            => $class->name,
+#				role_metaroles => \%ROLE_METAROLES,
+#			);
+#			bless(
+#				$class,
+#				Moose::Util::with_traits(
+#					ref($class),
+#					'MooseX::RoleQR::Trait::Role',
+#				),
+#			);
 		}
 	};
 };
@@ -213,6 +234,12 @@ BEGIN {
 	no thanks;
 	use Moose::Role;
 	use namespace::sweep;
+
+	BEGIN {
+		no warnings;
+		our $AUTHORITY = 'cpan:TOBYINK';
+		our $VERSION   = '0.002';
+	};
 
 	before apply => sub {
 		my ($self, $role, $class) = @_;
@@ -277,6 +304,12 @@ BEGIN {
 	no thanks;
 	use Moose::Role;
 	use namespace::sweep;
+
+	BEGIN {
+		no warnings;
+		our $AUTHORITY = 'cpan:TOBYINK';
+		our $VERSION   = '0.002';
+	};
 
 	before apply => sub {
 		my ($self, $role1, $role2) = @_;

@@ -1,6 +1,14 @@
 # This file acts as the project's changelog.
 
 `MooseX-RoleQR 0.001 cpan:TOBYINK`
-	issued  2012-10-17;
+	issued  2012-10-18;
 	label   "Initial release".
+
+`MooseX-RoleQR 0.002 cpan:TOBYINK`
+	issued  2012-10-18;
+	changeset [
+		item "Play nicely with other composite role metaclass traits."^^Bugfix;
+		item "Add missing dep on thanks.pm."^^Packaging;
+		item "Bundle an 'examples' dir."^^Packaging;
+	].
 
