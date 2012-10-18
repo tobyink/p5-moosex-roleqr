@@ -309,7 +309,7 @@ MooseX::RoleQR - allow "before qr{...} => sub {...};" in roles
       package Local::Role;
       use MooseX::RoleQR;
       after qr{^gr} => sub {
-         print "World\n";
+         print " World\n";
       };
    }
    
