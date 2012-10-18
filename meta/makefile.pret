@@ -8,5 +8,6 @@
 	requires          p`Moose 2.00`;
 	requires          p`namespace::sweep`;
 	requires          p`Scalar::Does 0.002`;
+	requires          p`thanks`;
 .
 
