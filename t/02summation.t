@@ -71,13 +71,14 @@ Local::C3->new->a('a'); $X{a}--;
 Local::C3->new->b('b'); $X{b}--;
 Local::C3->new->c('c'); $X{c}--;
 Local::C3->new->g('g'); $X{g}--;
-Local::C3->new->g('xyzzy');
+Local::C3->new->xyzzy('xyzzy');
 
 ok(
 	$X{a}==0 &&
 	$X{b}==0 &&
 	$X{c}==0 &&
-	$X{g}==0, 
+	$X{g}==0 &&
+	!exists $X{xyzzy}, 
 	"Class with complex composition",
 );
 
