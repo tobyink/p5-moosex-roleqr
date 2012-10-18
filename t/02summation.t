@@ -78,7 +78,7 @@ ok(
 	$X{b}==0 &&
 	$X{c}==0 &&
 	$X{g}==0 &&
-	!exists $X{xyzzy}, 
+	!exists $X{xyzzy},
 	"Class with complex composition",
 );
 

@@ -353,6 +353,12 @@ Moose::Role keywords:
 
 =back
 
+=begin trustme
+
+=item C<init_meta>
+
+=end trustme
+
 =head2 Caveat Regarding the Order of Method Modifiers
 
 Moose executes method modifiers in a well-defined order (see
