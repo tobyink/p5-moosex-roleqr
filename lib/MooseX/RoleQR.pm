@@ -7,7 +7,7 @@ use utf8;
 
 BEGIN {
 	$MooseX::RoleQR::AUTHORITY = 'cpan:TOBYINK';
-	$MooseX::RoleQR::VERSION   = '0.002';
+	$MooseX::RoleQR::VERSION   = '0.003';
 }
 
 use Moose ();
@@ -82,7 +82,7 @@ BEGIN {
 	BEGIN {
 		no warnings;
 		our $AUTHORITY = 'cpan:TOBYINK';
-		our $VERSION   = '0.002';
+		our $VERSION   = '0.003';
 	};
 
 	has [qw/ expression body /] => (is => 'ro', required => 1);
@@ -98,10 +98,10 @@ BEGIN {
 #	sub _matches_name
 	sub matches_name
 	{
-		my ($meta, $name) = @_;
+		my ($meta, $name, $hints) = @_;
 		my $expr = $meta->expression;
-		return $name =~ $expr if does($expr, REGEXP);
-		return $expr->($name) if does($expr, CODE);  # ssh... secret!
+		return $name =~ $expr                if does($expr, REGEXP);
+		return $expr->($name, @{$hints||[]}) if does($expr, CODE);  # ssh... secret!
 		return;
 	}
 };
@@ -117,7 +117,7 @@ BEGIN {
 	BEGIN {
 		no warnings;
 		our $AUTHORITY = 'cpan:TOBYINK';
-		our $VERSION   = '0.002';
+		our $VERSION   = '0.003';
 	};
 
 	has deferred_modifier_class => (
@@ -162,8 +162,8 @@ BEGIN {
 		
 		next if $type eq 'override';
 		*{"get_deferred_${type}_method_modifiers"} = sub {
-			my ($meta, $name) = @_;
-			grep { $_->matches_name($name) } @{ $meta->$attr };
+			my ($meta, $name, $hints) = @_;
+			grep { $_->matches_name($name, $hints) } @{ $meta->$attr };
 		};
 	}
 	
@@ -189,7 +189,7 @@ BEGIN {
 	BEGIN {
 		no warnings;
 		our $AUTHORITY = 'cpan:TOBYINK';
-		our $VERSION   = '0.002';
+		our $VERSION   = '0.003';
 	};
 
 	after apply => sub {
@@ -238,7 +238,7 @@ BEGIN {
 	BEGIN {
 		no warnings;
 		our $AUTHORITY = 'cpan:TOBYINK';
-		our $VERSION   = '0.002';
+		our $VERSION   = '0.003';
 	};
 
 	before apply => sub {
@@ -289,7 +289,7 @@ BEGIN {
 			ROLE: for my $r (@roles)
 			{
 				next ROLE unless $r->can($get);
-				MODIFIER: for ($r->$get($method))
+				MODIFIER: for ($r->$get($method, \@_))
 				{
 #					warn "@{[$role->name]} modifying @{[$class->name]} method $method";
 					$class->$add($method, $_->body);
@@ -308,7 +308,7 @@ BEGIN {
 	BEGIN {
 		no warnings;
 		our $AUTHORITY = 'cpan:TOBYINK';
-		our $VERSION   = '0.002';
+		our $VERSION   = '0.003';
 	};
 
 	before apply => sub {

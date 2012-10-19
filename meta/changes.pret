@@ -12,3 +12,7 @@
 		item "Bundle an 'examples' dir."^^Packaging;
 	].
 
+`MooseX-RoleQR 0.003 cpan:TOBYINK`
+	issued  2012-10-19;
+	label   "changelog redacted".
+
