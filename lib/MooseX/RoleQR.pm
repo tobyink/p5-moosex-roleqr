@@ -7,7 +7,7 @@ use utf8;
 
 BEGIN {
 	$MooseX::RoleQR::AUTHORITY = 'cpan:TOBYINK';
-	$MooseX::RoleQR::VERSION   = '0.003';
+	$MooseX::RoleQR::VERSION   = '0.004';
 }
 
 use Moose ();
@@ -82,7 +82,7 @@ BEGIN {
 	BEGIN {
 		no warnings;
 		our $AUTHORITY = 'cpan:TOBYINK';
-		our $VERSION   = '0.003';
+		our $VERSION   = '0.004';
 	};
 
 	has [qw/ expression body /] => (is => 'ro', required => 1);
@@ -117,7 +117,7 @@ BEGIN {
 	BEGIN {
 		no warnings;
 		our $AUTHORITY = 'cpan:TOBYINK';
-		our $VERSION   = '0.003';
+		our $VERSION   = '0.004';
 	};
 
 	has deferred_modifier_class => (
@@ -189,7 +189,7 @@ BEGIN {
 	BEGIN {
 		no warnings;
 		our $AUTHORITY = 'cpan:TOBYINK';
-		our $VERSION   = '0.003';
+		our $VERSION   = '0.004';
 	};
 
 	after apply => sub {
@@ -238,7 +238,7 @@ BEGIN {
 	BEGIN {
 		no warnings;
 		our $AUTHORITY = 'cpan:TOBYINK';
-		our $VERSION   = '0.003';
+		our $VERSION   = '0.004';
 	};
 
 	before apply => sub {
@@ -308,7 +308,7 @@ BEGIN {
 	BEGIN {
 		no warnings;
 		our $AUTHORITY = 'cpan:TOBYINK';
-		our $VERSION   = '0.003';
+		our $VERSION   = '0.004';
 	};
 
 	before apply => sub {
