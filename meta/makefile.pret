@@ -1,0 +1,9 @@
+@prefix deps:  <http://ontologi.es/doap-deps#> .
+
+<http://purl.org/NET/cpan-uri/dist/MooseX-RoleQR/project>
+	deps:runtime-requirement         [ deps:on "Moose 2.00"^^deps:CpanId ];
+	deps:runtime-requirement         [ deps:on "namespace::sweep"^^deps:CpanId ];
+	deps:runtime-requirement         [ deps:on "Scalar::Does 0.002"^^deps:CpanId ];
+	deps:runtime-requirement         [ deps:on "thanks"^^deps:CpanId ];
+	deps:test-requirement            [ deps:on "Test::More 0.61"^^deps:CpanId ].
+
